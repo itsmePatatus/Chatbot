@@ -1,0 +1,30 @@
+Nicolau Vilaclara 
+Trivial Pursuit/Pub Quiz chatbot
+How it works 
+If you boil the chatbot to the core it is pretty simple. First the program gives the variable "question" a value which happens to be the users question. Then the program will analyze "question" and  divides then into the eight parts of speech using spacy; verb, noun, adjective, determiner, adverb, pronoun, preposition, conjunction and interconnection . Then the chatbot set a "possiblequestiontypes" words: who, what, which, what, when, how and where, and check the question for these words saving the result  as "questiontype". The program will also look for words identified by spacy as entities, if found it saved as a "targetquestion" otherwise it look for adjectives, proper nouyns and nouns and store them under the name "targetsubject" (storing all adjectives causes problem I will mention later). Then the program will look for verbs and store them as "questiondetail". 
+
+
+
+"questionstype" = who, what, which, what, when, how
+"targetsubject" = Entities or (adjectives, proper nouns and nouns)
+"questiondetail" = Verb (eliminating be and do that are auxiliars)
+
+The chatbot will proceed to creat a Wikipedia link and store it as "source" just like so:
+source="https://en.wikipedia.org/wiki/"+targetsubject. The program will use this link and scrape the website and copy it all and keep it in the variable "req". Then it will clean "req" by getting rid of ‘style’, 'script', 'head', 'title', 'meta', '[document]' (this is in HTML) and finally it saves the remainings of "req" as "scrapedtext" as simple text.. But if it doesn’t create a useable link to begin with the program will display an error message apologizing. If all goes right the only thing left to do now is look for the answer to the users question which is somewhere in "scrapedtext". The chatbot will do this by using one of Spacy’s functions "Similarity". Each word in Spacy has a vector associated with it. Spacy can rate the similarity of two words from 1 to 0. For example dog and dog would be 1, dog and cat would be 0.80 and dog and banana would score a 0.24. The program  looks for sentences with entities in them and will divide them into individual words then it will look for words that have a >0.7 (I tried several settings and if too low we got too many answers and if too high sometimes the right answer is not included) similarity with "questiondetail" and prints it. The printed at least one sentences are likely to be the answer. 
+
+
+
+Errors 
+To begin with Spacy is based on probability and does not recognize the meaning of each word in it’s each context so it will occasionally make unlucky mistakes. It is very much like rolling die just more complicated and more likely to give you the result you want. The second major mistake is storing adjectives under "targetsubject" this is not does not cause a problem most the time but if the adjective is part of the "questiondetail" and the program does not know how to differentiate if the adjective should be "questiondetail" or a "targetsubject". The program can’t answer "yes or no" question which is a bit unfortunate. The Chatbot also is extremely sensitive when it comes to capitalization.  
+Future Improvements
+This Chatbots improvements can be split into 4 parts: identification of the "targetsubject" and the "questiondetail", finding the Wikipedia page (scraping included),  finding the answer for the scraped text. Starting with the identification of the  "targetsubject" and   "questiondetail", and shortlisting the answers given.
+ The Chatbot does not struggle with: who, when, and where questions because the answers are easy to identify as dates/time/events, persons/organizations and places/countries/events clear and easy to find. But the Chatbot does often trip up with: how, what and which questions. These tend to have a more complex target question that confuses the Chatbot. To improve this I can increase question types (ex. Not just how but how much or how fast) and use spaCy’s subordinated words (dependency parsing) will help define the  "targetsubject". The second major improvement has to do with finding the Wikipedia page and scraping it. As of now if the "targetsubject" has its own Wikipedia page this part of the program works fine. But if the program makes a faulty link or doesnt find a page it wont work. So to fix this  I could code the Chatbot to refine the search by using the search function in the python module (wikipediaapi). This will give us several webs were we can iterate and look for possible answers. The last major improvement is similar to the first on the algorithm is good at finding answers which have to do with: whom when, and where because they are clear and concise and it can answer other types of question but when looking through the scraped text the chatbot does occasionally show the wrong answer. In order to fix this the 1st problem has to be solved first. After that by using the similarity function for associated words related to the question.
+
+
+
+Question type      Entitiy spaCy     Words associated 
+How long           Quantity          Km, cm, in
+How much           Quantity, Money   2€, £, €, 2$
+
+Finally, in several cases we get many answers not all of them correct it will be necessary to filter them to give the best set of 1,2 o 3 answers. To do that we can use the the "word_similarity_max" for each sentence to rank possible answers  together with other conditions like the target subject is included in the sentence if there is any sentence that precisaly include it.
+
