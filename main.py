@@ -13,6 +13,8 @@ question[0] = question[0].lower()
 question = ''.join(question)
 
 #parse the question
+print('importing NLP to analyse your question...')
+
 import spacy
 
 #use the web_md version of spacy otherwise similarity() function does not work
@@ -24,15 +26,16 @@ doc=nlp(question)
 
 for token in doc:
     print(token.text,token.pos_)
-
+    
 for ent in doc.ents:
-    print(len(doc.ents), ent.text, ent.label_)
-
+    print(ent.text, ent.label_)
 #identify question type aka. when where who why how
+
+print('identifying target, type and detail question...')
 
 possiblequestiontypes=['who','which','what','when', 'how','where']
 
-i=0
+i=0 
 targetsubject=""
 questiontype=""
 
@@ -43,7 +46,7 @@ for i in range(len(doc)):
         questiontype= doc[i].text
 if questiontype=='':
         print('I can not find the question type')
-
+               
 #find the target subject
 targetsubject=''
     #if there is a clear spacy entity use it as a target question
@@ -55,26 +58,27 @@ else:
     if "PROPN" == doc[i].pos_:
             targetsubject+=doc[i].text+"_"
     if "ADJ" == doc[i].pos_:
-            targetsubject+=doc[i].text+"_"
+            targetsubject+=doc[i].text+"_"    
     if ("NOUN" == doc[i].pos_) and (doc[i].text not in possiblequestiontypes):
             targetsubject+=doc[i].text+"_"
-    targetsubject=targetsubject[:-1]
-
+    targetsubject=targetsubject[:-1]     
+        
 print('target subject is ',targetsubject)
 print('target question is ',questiontype)
 
-#look for question detail
+#look for question detail 
 i=0
 questiondetail=""
 for i in range(len(doc)):
-        if "ADJ" == doc[i].pos_:
-            #questiondetail+=doc[i].lemma_+"_"
-        if "VERB" == doc[i].pos_ and doc[i].lemma_!='do' and doc[i].lemma_!='be':
-            print (doc[i].lemma_)
+    if "ADJ" == doc[i].pos_:
+            questiondetail+=doc[i].lemma_+"_"    
+    if "VERB" == doc[i].pos_ and doc[i].lemma_!='do' and doc[i].lemma_!='be':
             questiondetail+=doc[i].text
 print('question detail is ',questiondetail)
 
-#scrape
+#scrape 
+print('finding the wiki web that contains the answer....')
+
 import urllib
 import requests
 import sys
@@ -84,7 +88,7 @@ from bs4.element import Comment
 #assign website to look
 source="https://en.wikipedia.org/wiki/"+targetsubject
 
-print(source)
+print('I am looking at ',source, ' for the answer....')
 
 #handle errors if the web can not find
 req = urllib.request.Request(source)
@@ -93,7 +97,7 @@ except urllib.error.URLError as e:
     print('Sorry, I can not answer your question')
     sys.exit()
 
-#clean the text file
+#clean the text file 
 
 def tag_visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
@@ -106,7 +110,7 @@ def tag_visible(element):
 def text_from_html(body):
     soup = BeautifulSoup(body, 'html.parser')
     texts = soup.findAll(text=True)
-    visible_texts = filter(tag_visible, texts)
+    visible_texts = filter(tag_visible, texts)  
     return u" ".join(t.strip() for t in visible_texts)
 
 html = urllib.request.urlopen(source).read()
@@ -114,6 +118,8 @@ html = urllib.request.urlopen(source).read()
 scrapedtext=text_from_html(html)
 
 #use nlp to find answer
+
+print('looking through all possible sentences that may contains the answer....')
 
 doc=nlp(scrapedtext)
 
@@ -137,36 +143,38 @@ if questiontype=='which':
     Set_Entities=['DATE', 'EVENT','TIME','PERSON','NORP','ORG','GTE','GPE','LANGUAGE']
 if questiontype=='what':
     Set_Entities=['DATE', 'EVENT','TIME','PERSON','NORP','ORG','GTE','GPE','LANGUAGE']
-
-
-#the code looks all questions for Question Detail
+    
+    
+#the code looks all sentences for Question Detail
 n_answer_found=0
 for sent in doc.sents:
-
+        
         sentence=sent.text
         words=sentence.split()
-
+        
         #search words similar to the Question Detail
         word_similarity_max=0
-
+        
         for i in range (len(words)):
             word_similarity = nlp(words[i]).similarity(nlp(questiondetail))
             if word_similarity>word_similarity_max:
                 word_similarity_max=word_similarity
-
-
+                
+            
         if word_similarity_max>0.7 and len(words)>2:
             #look if there is any entity interesting to the question
             entities_count=0
             doc3=nlp(sent.text)
+            Found=0
             for ent in doc3.ents:
                 if ent.label_ in Set_Entities:
                     Found=1
             if Found==1:
                 n_answer_found+=1
-                print(n_answer_found, word_similarity_max, sentence)
-                print()
+                print(n_answer_found, word_similarity_max, sentence) 
+                print() 
 
-print(n_answer_found, word_similarity_max)
-if n_answer_found==0 or word_similarity_max<.7:
+if n_answer_found>0:
+    print('I found ',n_answer_found,' answers for you. END')                
+if n_answer_found==0:
         print('Sorry, I could find a wiki page but not the answer your requested')
