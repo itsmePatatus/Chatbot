@@ -1,7 +1,7 @@
 #data source from user
 print ('Hello, ')
 print()
-question=input('Please, enter your question and press enter. Mind you cases, write everything in lower case exept proper nouns')
+question=input('Please, enter your question and press enter. Mind your cases, write everything in lower case exept proper nouns')
 print()
 print()
 print('your question is ', question)
